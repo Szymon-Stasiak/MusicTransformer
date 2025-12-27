@@ -1,47 +1,58 @@
-def read_header(midi_data):
-    if midi_data[0:4] != b'MThd':
-        raise ValueError("Invalid MIDI file: missing 'MThd' header")
-    length = int.from_bytes(midi_data[4:8], byteorder='big')
-    format = int.from_bytes(midi_data[8:10], byteorder='big')
-    tracks_quantity = int.from_bytes(midi_data[10:12], byteorder='big')
-    division = int.from_bytes(midi_data[12:14], byteorder='big')
-    return [length, format, tracks_quantity, division]
+from pretty_midi import PrettyMIDI
 
 
-def print_header(header):
-    length, format, tracks, division = header
+class RemiNote:
+    def __init__(self, name, start, end, velocity, pitch):
+        self.name = name
+        self.start = start
+        self.end = end
+        self.velocity = velocity
+        self.pitch = pitch
 
-    print(f"Header length: {length} bytes")
-
-    if format == 0:
-        format_str = "Single track"
-    elif format == 1:
-        format_str = "Multiple track"
-    elif format == 2:
-        format_str = "Multiple song"
-    else:
-        format_str = "Unknown format"
-    print(f"Format: {format} ({format_str})")
-
-    print(f"Number of tracks: {tracks}")
-
-    if division & 0x8000:
-        smpte_format = -(division >> 8)
-        ticks_per_frame = division & 0xFF
-        print(f"Time division: SMPTE {smpte_format} fps, {ticks_per_frame} ticks per frame")
-    else:
-        print(f"Time division: {division} ticks per beat")
+class RemiTempo:
+    def __init__(self, name, start, pitch):
+        self.name = name
+        self.start = start
+        self.pitch = pitch
 
 
-def parse_midi(midi_data):
-    header = read_header(midi_data)
-    print_header(header)
+def notes_and_tempo_in_midi_ticks(midi_data: PrettyMIDI):
+    remi_notes = []
+    for i, instrument in enumerate(midi_data.instruments):
+        for note in instrument.notes:
+            start_tick = midi_data.time_to_tick(note.start)
+            end_tick = midi_data.time_to_tick(note.end)
+
+            rn = RemiNote(
+                name=f"Instrument_{i}",
+                start=start_tick,
+                end=end_tick,
+                velocity=note.velocity,
+                pitch=note.pitch
+            )
+            remi_notes.append(rn)
+
+    tempo_changes = []
+    times, tempos = midi_data.get_tempo_changes()
+    for t, bpm in zip(times, tempos):
+        tick = midi_data.time_to_tick(t)
+        tempo = RemiTempo(
+            name="Tempo",
+            start=tick,
+            pitch=bpm
+        )
+        tempo_changes.append(tempo)
+
+    remi_notes.sort(key=lambda x: x.start)
+    tempo_changes.sort(key=lambda x: x.start)
 
 
-    return [header]
+    return remi_notes, tempo_changes
 
-
-if __name__ == "__main__":
-    with open("./data/evaluation/000.midi", "rb") as f:
-        data = f.read()
-    parse_midi(data)
+if __name__ == '__main__':
+    midi_data = PrettyMIDI('./data/evaluation/000.midi')
+    note_items, tempo_items = notes_and_tempo_in_midi_ticks(midi_data)
+    for note in note_items:
+        print(vars(note))
+    for tempo in tempo_items:
+        print(vars(tempo))
