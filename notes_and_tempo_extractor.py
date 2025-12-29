@@ -3,9 +3,8 @@ from remi_item import RemiItem
 from utils import quantize_items_16th, quantize_tempo_16th
 
 
-def parse_midi_to_remi(file_path):
-    score = converter.parse(file_path, quantizePost=False)
-    flat_score = score.flat
+def parse_midi_to_remi(score):
+    flat_score = score.flatten()
 
     notes_list = []
     tempo_list = []
@@ -43,7 +42,8 @@ def get_items_from_midi_file(filepath):
 
 # test
 if __name__ == '__main__':
-    note_items, tempo_items = get_items_from_midi_file('./data/train/000.midi')
+    score = converter.parse('./data/train/000.midi')
+    note_items, tempo_items = get_items_from_midi_file(score)
 
     for n in note_items:
         print(vars(n))

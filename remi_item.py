@@ -1,7 +1,7 @@
 class RemiItem:
-    def __init__(self, name, start, end, velocity, pitch):
+    def __init__(self, name, start, end, descriptor, value):
         self.name = name
         self.start = start
         self.end = end
-        self.velocity = velocity
-        self.pitch = pitch
+        self.descriptor = descriptor
+        self.value = value

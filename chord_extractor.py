@@ -1,16 +1,40 @@
-from music21 import converter
 from remi_item import RemiItem
 from collections import defaultdict
 from utils import quantize_items_16th
+from music21 import converter
 
 
-def chords_from_midi(filepath):
+CHORD_QUALITY_MAPPING = {
+    "major": "maj",
+    "minor": "min",
+    "dominant": "7",
+    "major-seventh": "maj7",
+    "minor-seventh": "min7",
+    "diminished": "dim",
+    "augmented": "aug",
+    "half-diminished": "m7b5",
+    "diminished-seventh": "dim7"
+}
+
+
+def get_chord_root(c):
     try:
-        score = converter.parse(filepath)
-    except Exception as e:
-        print(f"Error parsing: {e}")
-        return []
+        if c.root():
+            return c.root().name
+        return "unknown"
+    except:
+        return "unknown"
 
+
+def get_chord_quality(c):
+    try:
+        q = c.quality
+        return CHORD_QUALITY_MAPPING.get(q, "other")
+    except:
+        return "other"
+
+
+def chords_from_midi(score):
     try:
         s_chords = score.chordify()
     except Exception:
@@ -27,32 +51,33 @@ def chords_from_midi(filepath):
     measures = s_chords.recurse().getElementsByClass('Measure')
 
     for m in measures:
-        abs_start = m.offset
-        abs_end = m.offset + m.duration.quarterLength
+        abs_start = float(m.offset)
+        abs_end = abs_start + float(m.duration.quarterLength)
 
-        chord_durations = defaultdict(float)
+        chord_stats = defaultdict(float)
 
-        for c in m.flat.getElementsByClass('Chord'):
-            duration = c.quarterLength
+        for c in m.flatten().getElementsByClass('Chord'):
+            duration = float(c.quarterLength)
 
-            try:
-                name = f"{c.root().name}:{c.quality}"
-            except:
-                name = "Unknown"
+            root = get_chord_root(c)
+            quality = get_chord_quality(c)
 
-            chord_durations[name] += duration
+            chord_stats[(root, quality)] += duration
 
-        if chord_durations:
-            best_chord = max(chord_durations, key=chord_durations.get)
+        if chord_stats:
+            best_root, best_quality = max(chord_stats, key=chord_stats.get)
         else:
-            best_chord = "Rest"
+            best_root = "unknown"
+            best_quality = "other"
 
+        if(best_root=="unknown" ):
+            continue
         item = RemiItem(
             name="Chord",
-            start=float(abs_start),
-            end=float(abs_end),
-            velocity=None,
-            pitch=best_chord
+            start=abs_start,
+            end=abs_end,
+            descriptor=best_quality,
+            value=best_root
         )
         aggregated_items.append(item)
 
@@ -60,56 +85,37 @@ def chords_from_midi(filepath):
 
 
 def fulfil_and_clear_items(items):
-    for c in items:
-        c.pitch = clean_chord_pitch(c.pitch)
+    items.sort(key=lambda x: x.start)
 
-    to_add = []
     for i in range(len(items) - 1):
-        if (items[i].end > items[i + 1].start):
+        if items[i].end > items[i + 1].start:
             items[i].end = items[i + 1].start
-        elif (items[i].end < items[i + 1].start):
-            item = RemiItem(
-                name="Chord",
-                start=items[i].end,
-                end=items[i + 1].start,
-                velocity=None,
-                pitch="Rest"
-            )
-            to_add.append(item)
 
-    if len(to_add) > 0:
-        items.extend(to_add)
-        items.sort(key=lambda x: x.start)
-
-    items = [item for item in items if item.start != item.end]
+    items = [item for item in items if item.start < item.end]
 
     i = 0
     while i < len(items) - 1:
-        if items[i].pitch ==items[i + 1].pitch :
-            items[i].end = items[i + 1].end
+        cur = items[i]
+        nxt = items[i + 1]
+
+        if (cur.end == nxt.start and
+                cur.value == nxt.value and
+                cur.descriptor == nxt.descriptor):
+
+            cur.end = nxt.end
             del items[i + 1]
         else:
             i += 1
 
     return items
 
-
-def clean_chord_pitch(pitch_str):
-    if pitch_str == 'Rest':
-        return pitch_str
-
-    if ':' in pitch_str:
-        root, quality = pitch_str.split(':')
-        if quality == 'other':
-            return f"{root}:major"
-
-    return pitch_str
 def print_chords(chords):
     print(f"Generated {len(chords)} aggregated chords (by measure).")
     for c in chords:
-       print(vars(c))
+        print(vars(c))
 
 
 if __name__ == '__main__':
-    chords = chords_from_midi('./data/train/000.midi')
+    score = converter.parse('./data/train/000.midi')
+    chords = chords_from_midi(score)
     print_chords(chords)

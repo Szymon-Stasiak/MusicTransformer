@@ -1,7 +1,4 @@
-import numpy as np
-from remi_item import RemiItem
-
-RESOLUTION = 4
+from constants import QUANTIZATION_RESOLUTION as RESOLUTION
 
 
 def quantize_items_16th(items):
@@ -28,43 +25,44 @@ def quantize_tempo_16th(items):
     return items
 
 
-def group_items(notes, tempo, chords=None):
-    if chords is None:
-        chords = []
+def fit_to_boundary(val, down, up):
+    if val < down: return down
+    if val > up: return up
+    return val
 
-    items = notes + tempo + chords
-    items.sort(key=lambda x: x.start)
+def get_position(val):
+    return val % 16
 
-    BAR_STEPS = 16
 
-    if not items:
-        return []
 
-    max_time = items[-1].end
-    downbeats = np.arange(0, max_time + BAR_STEPS, BAR_STEPS)
+ROOT_MAP = {
+    "C": 0, "C#": 1, "Db": 1,
+    "D": 2, "D#": 3, "Eb": 3,
+    "E": 4,
+    "F": 5, "F#": 6, "Gb": 6,
+    "G": 7, "G#": 8, "Ab": 8,
+    "A": 9, "A#": 10, "Bb": 10,
+    "B": 11
+}
 
-    groups = []
+QUALITY_LIST = [
+    "maj", "min", "dim", "aug", "7",
+    "maj7", "min7", "m7b5", "dim7", "other"
+]
 
-    for db_start, db_end in zip(downbeats[:-1], downbeats[1:]):
-        insiders = [
-            item for item in items
-            if item.start >= db_start and item.start < db_end
-        ]
-        overall = [db_start] + insiders + [db_end]
+QUALITY_MAP = {q: i for i, q in enumerate(QUALITY_LIST)}
+OTHER_QUALITY_ID = QUALITY_MAP["other"]
 
-        filtered = []
-        tempo_seen = False
-        for elem in overall:
-            if isinstance(elem, RemiItem) and elem.name == "Tempo":
-                if not tempo_seen:
-                    filtered.append(elem)
-                    tempo_seen = True
-            else:
-                filtered.append(elem)
 
-        groups.append(filtered)
 
-    return groups
+def get_root_id(root_name: str) -> int:
+
+    return ROOT_MAP[root_name]
+
+
+def get_quality_id(quality_name: str) -> int:
+
+    return QUALITY_MAP.get(quality_name, OTHER_QUALITY_ID)
 
 # todo move to better place
 # def create_midi_from_remi(note_items, tempo_items, output_path):
