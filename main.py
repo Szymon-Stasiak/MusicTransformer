@@ -1,4 +1,4 @@
-from modules import create_list_of_groups, create_list_of_events
+from processing.event_mapper import create_list_of_groups, create_list_of_events
 
 if __name__ == '__main__':
     groups = create_list_of_groups('./data/train/000.midi')

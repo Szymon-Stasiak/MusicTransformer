@@ -1,9 +1,9 @@
 import numpy as np
-from remi_item import RemiItem
-from chord_extractor import chords_from_midi
-from notes_and_tempo_extractor import get_items_from_midi_file
+from entities.remi_item import RemiItem
+from extractors.chord_extractor import chords_from_midi
+from extractors.notes_and_tempo_extractor import get_items_from_midi_file
 from music21 import converter
-from event import Event
+from entities.event import Event
 from utils import fit_to_boundary, get_position, get_chord_id
 from constants import BAR, EOS, SOS, TEMPO, POSITION, NOTE_ON, DURATION, CHORD, VElOCITY
 

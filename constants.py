@@ -13,3 +13,6 @@ POSITION = "POS"
 SOS = "SOS"
 EOS = "EOS"
 PAD = "PAD"
+
+VOCAB_SIZE = 565
+

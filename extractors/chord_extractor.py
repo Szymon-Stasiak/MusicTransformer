@@ -1,6 +1,6 @@
-from remi_item import RemiItem
+from entities.remi_item import RemiItem
 from collections import defaultdict
-from utils import quantize_items_16th
+from processing.quantizator import quantize_items_16th
 from music21 import converter
 
 
@@ -116,6 +116,6 @@ def print_chords(chords):
 
 
 if __name__ == '__main__':
-    score = converter.parse('./data/train/000.midi')
+    score = converter.parse('../data/train/000.midi')
     chords = chords_from_midi(score)
     print_chords(chords)

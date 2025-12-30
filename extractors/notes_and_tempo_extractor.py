@@ -1,6 +1,6 @@
-from music21 import converter, note, chord, tempo, stream
-from remi_item import RemiItem
-from utils import quantize_items_16th, quantize_tempo_16th
+from music21 import converter, note, chord, tempo
+from entities.remi_item import RemiItem
+from processing.quantizator import quantize_items_16th, quantize_tempo_16th
 
 
 def parse_midi_to_remi(score):
@@ -42,7 +42,7 @@ def get_items_from_midi_file(filepath):
 
 # test
 if __name__ == '__main__':
-    score = converter.parse('./data/train/000.midi')
+    score = converter.parse('../data/train/000.midi')
     note_items, tempo_items = get_items_from_midi_file(score)
 
     for n in note_items:
