@@ -1,4 +1,4 @@
 class Event:
-    def __init__(self, name, val):
-        self.name = name
-        self.val = val
+    def __init__(self, type, value):
+        self.type = type
+        self.value = value

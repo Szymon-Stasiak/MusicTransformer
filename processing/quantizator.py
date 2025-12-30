@@ -1,4 +1,6 @@
 from constants import QUANTIZATION_RESOLUTION as RESOLUTION
+
+
 def quantize_items_16th(items):
     for item in items:
 
@@ -21,4 +23,3 @@ def quantize_tempo_16th(items):
         item.start = q_start
 
     return items
-

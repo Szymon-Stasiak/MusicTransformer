@@ -3,7 +3,7 @@ from entities.remi_item import RemiItem
 from processing.quantizator import quantize_items_16th, quantize_tempo_16th
 
 
-def parse_midi_to_remi(score):
+def extract_notes_and_tempos(score):
     flat_score = score.flatten()
 
     notes_list = []
@@ -13,6 +13,7 @@ def parse_midi_to_remi(score):
         if isinstance(element, note.Note):
             start = element.offset
             end = element.offset + element.duration.quarterLength
+
             vel = element.volume.velocity if element.volume.velocity else 64
 
             item = RemiItem("Note", start, end, vel, element.pitch.midi)
@@ -32,17 +33,18 @@ def parse_midi_to_remi(score):
             item = RemiItem("Tempo", element.offset, None, None, int(bpm))
             tempo_list.append(item)
 
+    tempo_list[0].start = 0
     return quantize_items_16th(notes_list), quantize_tempo_16th(tempo_list)
 
 
 def get_items_from_midi_file(filepath):
-    note_items, tempo_items = parse_midi_to_remi(filepath)
+    note_items, tempo_items = extract_notes_and_tempos(filepath)
     return note_items, tempo_items
 
 
 # test
 if __name__ == '__main__':
-    score = converter.parse('../data/train/000.midi')
+    score = converter.parse('../../data/train/000.midi')
     note_items, tempo_items = get_items_from_midi_file(score)
 
     for n in note_items:

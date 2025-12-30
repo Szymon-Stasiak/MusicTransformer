@@ -1,11 +1,11 @@
-from processing.event_mapper import create_list_of_groups, create_list_of_events
+from processing.data_loader import create_event_sequence_from_directory
 
 if __name__ == '__main__':
-    groups = create_list_of_groups('./data/train/000.midi')
-    events = create_list_of_events(groups)
-
-    for e in events:
-        print( "Event: ", e.name, " | Value: ", e.val)
+    groups = create_event_sequence_from_directory('./data/train', use_cache=True, make_cache=True, clean_cache=False)
+    # events = create_list_of_events(groups)
+    #
+    # for e in events:
+    #     print( "Event: ", e.name, " | Value: ", e.val)
 
     # print(f"\n{'=' * 20} After grouping {'=' * 20}\n")
     #

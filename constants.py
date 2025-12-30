@@ -4,7 +4,7 @@ SEQUENCE_SIZE = 512
 
 # events
 BAR = "BAR"
-VElOCITY = "VEL"
+VELOCITY = "VEL"
 NOTE_ON = "NOTE_ON"
 DURATION = "DUR"
 TEMPO = "TEMPO"
@@ -16,3 +16,4 @@ PAD = "PAD"
 
 VOCAB_SIZE = 565
 
+CACHE_DIR = "data_cache"

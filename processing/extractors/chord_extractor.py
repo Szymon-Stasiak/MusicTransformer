@@ -3,7 +3,6 @@ from collections import defaultdict
 from processing.quantizator import quantize_items_16th
 from music21 import converter
 
-
 CHORD_QUALITY_MAPPING = {
     "major": "maj",
     "minor": "min",
@@ -34,7 +33,7 @@ def get_chord_quality(c):
         return "other"
 
 
-def chords_from_midi(score):
+def extract_chords(score):
     try:
         s_chords = score.chordify()
     except Exception:
@@ -70,10 +69,10 @@ def chords_from_midi(score):
             best_root = "unknown"
             best_quality = "other"
 
-        if(best_root=="unknown" ):
+        if (best_root == "unknown"):
             continue
         item = RemiItem(
-            name="Chord",
+            type="Chord",
             start=abs_start,
             end=abs_end,
             descriptor=best_quality,
@@ -109,6 +108,7 @@ def fulfil_and_clear_items(items):
 
     return items
 
+
 def print_chords(chords):
     print(f"Generated {len(chords)} aggregated chords (by measure).")
     for c in chords:
@@ -116,6 +116,6 @@ def print_chords(chords):
 
 
 if __name__ == '__main__':
-    score = converter.parse('../data/train/000.midi')
-    chords = chords_from_midi(score)
+    score = converter.parse('../../data/train/000.midi')
+    chords = extract_chords(score)
     print_chords(chords)
