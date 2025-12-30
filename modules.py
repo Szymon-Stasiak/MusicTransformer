@@ -4,8 +4,8 @@ from chord_extractor import chords_from_midi
 from notes_and_tempo_extractor import get_items_from_midi_file
 from music21 import converter
 from event import Event
-from utils import fit_to_boundary , get_position, get_root_id, get_quality_id
-from constants import BAR, EOS, SOS, TEMPO, POSITION, NOTE_ON, DURATION, CHORD_ROOT, CHORD_QUALITY, VElOCITY
+from utils import fit_to_boundary, get_position, get_chord_id
+from constants import BAR, EOS, SOS, TEMPO, POSITION, NOTE_ON, DURATION, CHORD, VElOCITY
 
 
 def group_items(notes, tempo, chords=None):
@@ -66,21 +66,16 @@ def create_list_of_events(groups):
 
     for g in groups:
         events.append(Event(BAR, None))
-        for i in range (len(g)):
-            if(i==0 or g[i].start!=g[i-1].start):
+        for i in range(len(g)):
+            if (i == 0 or g[i].start != g[i - 1].start):
                 events.append(Event(POSITION, get_position(g[i].start)))
             if (g[i].name == "Tempo"):
                 events.append(Event(TEMPO, fit_to_boundary(g[i].value, 30, 230)))
             if (g[i].name == "Chord"):
-                events.append(Event(CHORD_ROOT, get_root_id(g[i].value)))
-                events.append(Event(CHORD_QUALITY, get_quality_id(g[i].descriptor)))
+                events.append(Event(CHORD, get_chord_id(g[i].value, g[i].descriptor)))
             if (g[i].name == "Note"):
                 events.append(Event(VElOCITY, fit_to_boundary(g[i].descriptor // 4, 0, 31)))
                 events.append(Event(NOTE_ON, fit_to_boundary(g[i].value, 0, 127)))
                 events.append(Event(DURATION, fit_to_boundary(g[i].end - g[i].start, 1, 64)))
     events.append(Event(EOS, None))
     return events
-
-
-
-
