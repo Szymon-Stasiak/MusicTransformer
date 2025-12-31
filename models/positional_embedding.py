@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import math
 from constants import DEFAULT_RECURRENCE_LENGTH
+
+
 class PositionalEmbedding(nn.Module):
 
     def __init__(self, d_model, recurrence_length=DEFAULT_RECURRENCE_LENGTH):
@@ -28,5 +30,5 @@ class PositionalEmbedding(nn.Module):
 
 
 if __name__ == "__main__":
-     x=PositionalEmbedding(d_model=10)
-     x.forward(torch.zeros(1,20,10))
+    x = PositionalEmbedding(d_model=10)
+    x.forward(torch.zeros(1, 20, 10))
