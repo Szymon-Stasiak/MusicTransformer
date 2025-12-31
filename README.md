@@ -1,12 +1,17 @@
-# Music Transformer – REMI-based MIDI Modeling
+# Music Transformer-XL – REMI-based MIDI Modeling
 
-This repository contains an implementation inspired by the paper:
+This repository contains a Transformer-based model for **symbolic music generation**, operating on MIDI-derived event sequences using a **REMI-like representation**.
+
+The project is **inspired by** the paper:
 
 > **Pop Music Transformer: Beat-based Modeling and Generation of Expressive Pop Piano Compositions**  
 > Yu-Siang Huang, Yi-Hsuan Yang  
 > https://arxiv.org/abs/2002.00212
 
-The goal of this project is to build a **Transformer-based model for symbolic music generation**, operating on MIDI-derived event sequences using a **REMI-like representation**.
+**Important note:**  
+While this work draws conceptual inspiration from the Pop Music Transformer paper—particularly the idea of beat-based event modeling—it **does not implement the original method one-to-one**. Several components of the representation, data processing pipeline, and model design have been **modified, simplified, or reinterpreted** to better suit the goals of this project and practical experimentation.
+
+As a result, this repository should be viewed as a **REMI-inspired Transformer-XL approach**, rather than a faithful reproduction of the original paper’s architecture or training setup.
 
 ---
 
@@ -60,7 +65,68 @@ Bar boundaries are explicitly represented to preserve metrical structure.
 
 ## Model Architecture
 
-todo later
+The model is based on the **Transformer-XL** architecture, which is designed to model long-term dependencies using **segment-level recurrence**. By reusing hidden states from previous segments, the model can preserve musical context across long sequences, making it well-suited for symbolic music generation.
+
+---
+
+### Event-Based Music Representation
+
+Music is represented as a sequence of **discrete event tokens**, where each token corresponds to a specific musical concept. All tokens are mapped into a single continuous vocabulary with fixed index ranges assigned to each category.
+
+The vocabulary consists of the following token groups:
+
+- **Padding (PAD)**  
+  A special token used for sequence padding during batching.
+
+- **Start of Sequence (SOS)**  
+  Indicates the beginning of a musical sequence.
+
+- **End of Sequence (EOS)**  
+  Marks the end of a musical sequence.
+
+- **Bar**  
+  A single token used to denote the start of a new bar (measure), providing high-level rhythmic structure.
+
+- **Position**  
+  16 tokens representing discrete positions within a bar, allowing the model to learn rhythmic timing.
+
+- **Tempo**  
+  201 tokens encoding tempo values, enabling tempo changes within a sequence.
+
+- **Chord**  
+  120 tokens representing harmonic content, defined as combinations of 12 pitch-class roots and 10 chord qualities.
+
+- **Velocity**  
+  32 tokens representing note velocity, capturing expressive dynamics.
+
+- **Note On (Pitch)**  
+  128 tokens corresponding to MIDI pitch values.
+
+- **Duration**  
+  64 tokens encoding note duration values.
+
+The total vocabulary size is **565 tokens**.
+
+---
+
+### Sequence Structure
+
+Musical sequences follow an autoregressive, event-based format. A typical sequence begins with a start token and ends with an end token, with musical events in between such as bar markers, positions, tempo changes, harmonic context, and note-level information.
+
+The model is trained to predict the next token in the sequence given all previous tokens, including contextual information preserved in the Transformer-XL memory.
+
+---
+
+### Embeddings and Attention
+
+Each token is mapped to a learned embedding vector. The architecture uses:
+
+- **Relative positional encodings** provided by Transformer-XL
+- **Causal (masked) self-attention** to prevent information leakage from future events
+
+This allows the model to learn long-range musical structure while maintaining correct temporal ordering.
+
+
 ---
 
 ##  Requirements
