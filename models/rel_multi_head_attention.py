@@ -2,8 +2,9 @@ import torch
 import torch.nn as nn
 
 
-class RelMultiHeadAttention:
+class RelMultiHeadAttention(nn.Module):
     def __init__(self, num_heads, d_model, dropout=0.1):
+        super().__init__()
         if d_model % num_heads != 0:
             raise ValueError(f"d_model {d_model} is not dividable by {num_heads}")
 
@@ -19,8 +20,8 @@ class RelMultiHeadAttention:
         self.pos_net = nn.Linear(d_model, d_model, bias=False)
 
         # Biases
-        self.u = nn.Parameter(torch.Tensor(num_heads, self.d_head))
-        self.v = nn.Parameter(torch.Tensor(num_heads, self.d_head))
+        self.u = nn.Parameter(torch.Tensor(num_heads, self.d_heads))
+        self.v = nn.Parameter(torch.Tensor(num_heads, self.d_heads))
 
         nn.init.xavier_uniform_(self.u)
         nn.init.xavier_uniform_(self.v)
@@ -29,17 +30,49 @@ class RelMultiHeadAttention:
 
         self.o_net = nn.Linear(d_model, d_model, bias=False)
 
-    def forward(self, query, key, value, rel_positional_encoding, mask=None):
-        self.q_net = query
-        self.k_net = key
-        self.v_net = value
-        self.pos_net = rel_positional_encoding
+    def rel_shift(self, x):
+        batch_size, num_heads, q_len, k_len = x.size()
+        zero_pad = torch.zeros((batch_size, num_heads, q_len, 1), device=x.device, dtype=x.dtype)
+        x = torch.cat([zero_pad, x], dim=-1)
 
-        split_heads = lambda x: x.view(x.size(0), x.size(1), self.num_heads, self.d_heads).transpose(1, 2)
+        x = x.view(batch_size, num_heads, k_len + 1, q_len)
+        x = x[:, :, 1:].view(batch_size, num_heads, q_len, k_len)
+        return x
 
-        # to be continued...
+    def forward(self, x, pos_emb, mem=None, mask=None):
+        if mem is not None:
+            cat = torch.cat([mem, x], dim=1)
+        else:
+            cat = x
 
-        pass
+        q = self.q_net(x)
+        k = self.k_net(cat)
+        v = self.v_net(cat)
+        p = self.pos_net(pos_emb)
 
-    def backward(self, grad_output):
-        pass
+        q = self.split_heads(q)
+        k = self.split_heads(k)
+        v = self.split_heads(v)
+        p = p.view(-1, self.num_heads, self.d_heads).transpose(0, 1)
+
+        attention_content = torch.einsum('bhqd,bhkd->bhqk', q + self.u.unsqueeze(0).unsqueeze(2), k)
+        attention_position = torch.einsum('bhqd,hkd->bhqk', q + self.v.unsqueeze(0).unsqueeze(2), p)
+        attention_position = self.rel_shift(attention_position)
+
+        attn_score = (attention_content + attention_position) / (self.d_heads ** 0.5)
+
+        if mask is not None:
+            attn_score = attn_score.masked_fill(mask == 0, float('-inf'))
+
+        attn_prob = torch.softmax(attn_score, dim=-1)
+        attn_prob = self.dropout(attn_prob)
+
+        attn_vec = torch.einsum('bhqk,bhkd->bhqd', attn_prob, v)
+
+        attn_vec = attn_vec.transpose(1, 2).contiguous().view(x.size(0), x.size(1), self.d_model)
+
+        output = self.o_net(attn_vec)
+        return output
+    def split_heads(self, t):
+        B, T, D = t.size()
+        return t.view(B, T, self.num_heads, self.d_heads).transpose(1, 2)
