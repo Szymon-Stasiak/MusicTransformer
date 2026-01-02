@@ -47,7 +47,10 @@ def train():
 
             optimizer.zero_grad()
 
-            logits, _ = model(x, mems=mems)
+            logits, mems = model(x, mems=mems)
+
+            if mems is not None:
+                mems = [m.detach() for m in mems]
 
             loss = criterion(logits.view(-1, VOCAB_SIZE), y.view(-1))
 

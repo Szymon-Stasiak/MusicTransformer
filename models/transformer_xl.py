@@ -27,17 +27,18 @@ class MusicTransformerXL(nn.Module):
         self.output_head = nn.Linear(d_model, vocab_size)
 
     def forward(self, x, mems=None):
-
         if mems is None:
             mems = [None] * len(self.layers)
 
         word_emb = self.embedding(x)
         word_emb = self.dropout(word_emb)
 
-        pos_emb = self.pos_emb(word_emb)
 
+        mems_len = mems[0].size(1) if mems[0] is not None else 0
         q_len = x.size(1)
-        k_len = x.size(1) + (mems[0].size(0) if mems[0] is not None else 0)
+        k_len = q_len + mems_len
+
+        pos_emb = self.pos_emb.pe[:, :k_len]
 
         attn_mask = torch.triu(torch.ones(q_len, k_len, device=x.device), diagonal=1 + (k_len - q_len)).bool()
 
@@ -46,11 +47,8 @@ class MusicTransformerXL(nn.Module):
 
         for i, layer in enumerate(self.layers):
             new_mems.append(hidden_state.detach())
-
             m_i = mems[i]
-
             valid_mask = ~attn_mask
-
             hidden_state = layer(hidden_state, pos_emb, mem=m_i, mask=valid_mask)
 
         hidden_state = self.norm(hidden_state)

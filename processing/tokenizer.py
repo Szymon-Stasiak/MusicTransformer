@@ -16,10 +16,6 @@ VOCAB_OFFSETS = {
 
 def event_to_int(event):
     try:
-        if (event.type == None):
-            print("TUUUUUU")
-            print(vars(event))
-
         start_index = VOCAB_OFFSETS.get(event.type)
 
         if event.type in [SOS, EOS, BAR]:

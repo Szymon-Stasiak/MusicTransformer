@@ -39,52 +39,8 @@ def get_chord_id(root_name: str, quality_name: str) -> int:
     quality_id = get_quality_id(quality_name)
     return root_id * NUM_QUALITIES + quality_id
 
-
 def get_root_id(root_name: str) -> int:
     return ROOT_MAP[root_name]
 
-
 def get_quality_id(quality_name: str) -> int:
     return QUALITY_MAP.get(quality_name, OTHER_QUALITY_ID)
-
-
-# todo move to better place
-# def create_midi_from_remi(note_items, tempo_items, output_path):
-#
-#     s = stream.Stream()
-#
-#     for item in tempo_items:
-#         tm = tempo.MetronomeMark(number=item.velocity)
-#         s.insert(item.start, tm)
-#
-#     for item in note_items:
-#         n = note.Note(item.pitch)
-#
-#         n.volume.velocity = int(item.velocity)
-#
-#         duration = item.end - item.start
-#         if duration <= 0:
-#             duration = 0.25
-#
-#         n.quarterLength = duration
-#
-#         s.insert(item.start, n)
-#
-#     s.write('midi', fp=output_path)
-#     print(f"Saved MIDI: {output_path}")
-def main():
-    ids = set()
-
-    for root_name in ROOT_MAP.keys():
-        for quality_name in QUALITY_LIST:
-            chord_id = get_chord_id(root_name, quality_name)
-            chord_name = f"{root_name}{quality_name}"
-            print(f"{chord_name:8s} -> {chord_id}")
-            ids.add(chord_id)
-
-    print("\nLiczba unikalnych ID:", len(ids))
-    print("Zakres ID:", min(ids), "-", max(ids))
-
-
-if __name__ == "__main__":
-    main()

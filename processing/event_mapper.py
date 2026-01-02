@@ -1,5 +1,4 @@
 import numpy as np
-from entities.remi_item import RemiItem
 from entities.event import Event
 from utils import fit_to_boundary, get_position, get_chord_id
 from constants import BAR, EOS, SOS, TEMPO, POSITION, NOTE_ON, DURATION, CHORD, VELOCITY
@@ -29,14 +28,10 @@ def group_items(notes, tempo, chords=None):
         ]
 
         filtered = []
-        tempo_seen = False
         for elem in insiders:
-            if isinstance(elem, RemiItem) and elem.type == "Tempo":
-                if not tempo_seen:
-                    filtered.append(elem)
-                    tempo_seen = True
-            else:
-                filtered.append(elem)
+            if filtered and elem == filtered[-1]:
+                continue
+            filtered.append(elem)
 
         groups.append(filtered)
 
@@ -63,3 +58,19 @@ def create_list_of_events(groups):
                 events.append(Event(DURATION, fit_to_boundary(g[i].end - g[i].start, 1, 64)))
     events.append(Event(EOS, None))
     return events
+
+
+if __name__ == '__main__':
+    from processing.extractors.notes_and_tempo_extractor import get_items_from_midi_file
+    from processing.extractors.chord_extractor import extract_chords
+    from music21 import converter
+    from processing.tokenizer import event_to_int
+
+    score = converter.parse('../data/train/000.midi')
+    note_items, tempo_items = get_items_from_midi_file(score)
+    chord_items = extract_chords(score)
+
+    groups = group_items(note_items, tempo_items, chord_items)
+    events = create_list_of_events(groups)
+
+    print(*[event_to_int(e) for e in events])

@@ -1,4 +1,4 @@
-QUANTIZATION_RESOLUTION = 16
+QUANTIZATION_RESOLUTION = 4  # music21 returns quarter notes, so 4 ticks per quarter note = 16th notes
 
 SEQUENCE_SIZE = 512
 DEFAULT_RECURRENCE_LENGTH = 2 * SEQUENCE_SIZE
@@ -11,7 +11,7 @@ DATA_PATH = "../data/evaluation"
 
 SEQUENCE_SIZE = 512
 
-BATCH_SIZE = 64
+BATCH_SIZE = 16
 EPOCHS = 20
 LEARNING_RATE = 0.0001
 
