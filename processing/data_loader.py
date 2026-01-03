@@ -79,3 +79,35 @@ def create_event_sequence_from_directory(
 
     print(f"Success: {len(all_tokens)} tokens have been loaded")
     return MusicDataset(np.array(all_tokens, dtype=np.uint16), SEQUENCE_SIZE)
+
+
+def create_event_sequence_from_npy_cache(path=CACHE_DIR):
+    all_tokens = []
+
+    if not os.path.exists(path):
+        print(f"Error: cache directory {path} doesn't exist.")
+        return None
+
+    print("Loading tokens from .npy cache...")
+
+    for file in os.listdir(path):
+        if not file.endswith(".npy"):
+            continue
+
+        file_path = os.path.join(path, file)
+
+        try:
+            tokens = np.load(file_path)
+            all_tokens.extend(tokens)
+            print(f"Loaded cache file: {file}")
+        except Exception as e:
+            print(f"Error loading cache file {file}: {e}")
+
+    if len(all_tokens) == 0:
+        print("Warning: no tokens were loaded from cache.")
+        return None
+
+    all_tokens = np.array(all_tokens, dtype=np.uint16)
+
+    print(f"Success: {len(all_tokens)} tokens loaded from cache")
+    return MusicDataset(all_tokens, SEQUENCE_SIZE)
