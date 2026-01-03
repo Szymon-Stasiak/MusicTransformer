@@ -34,7 +34,7 @@ def create_remi_from_tokens(tokens):
             continue
         # TEMPO
         elif 20 <= token <= 220:
-            bpm = token - 20
+            bpm = token - 20 + 30
             tempo_item = RemiItem(
                 type="Tempo",
                 start=current_time,
@@ -54,7 +54,7 @@ def create_remi_from_tokens(tokens):
 
             if 373 <= note_on_token <= 500 and 501 <= duration_token <= 564:
                 pitch = note_on_token - 373
-                duration = (duration_token - 501)
+                duration = (duration_token - 501) + 1
                 note_item = RemiItem(
                     type="Note",
                     start=current_time,
@@ -128,7 +128,7 @@ def create_midi_humanized(items, output_path='humanized.mid'):
 
 
 def create_midis_from_tokens(tokens, remi_output_path='remi_items.txt',
-                             midi_output_path='output',):
+                             midi_output_path='output', ):
     humanized_midi_output_path = f"{midi_output_path}_humanized.mid"
     midi_output_path = f"{midi_output_path}.mid"
     items = create_remi_from_tokens(tokens)

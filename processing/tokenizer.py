@@ -1,4 +1,5 @@
 from constants import SOS, EOS, BAR, POSITION, TEMPO, CHORD, VELOCITY, NOTE_ON, DURATION, PAD
+from constants import VOCAB_SIZE
 
 VOCAB_OFFSETS = {
         PAD: 0,                # Empty space (padding) - optional, but recommended
@@ -15,13 +16,22 @@ VOCAB_OFFSETS = {
 
 
 def event_to_int(event):
-    try:
-        start_index = VOCAB_OFFSETS.get(event.type)
+    start = VOCAB_OFFSETS[event.type]
 
-        if event.type in [SOS, EOS, BAR]:
-            return start_index
+    if event.type in [SOS, EOS, BAR]:
+        return start
 
-        return start_index + event.value
+    val = event.value
 
-    except Exception as e:
-        print(f"Error in event_to_int with event {vars(event)}: {e}")
+    if event.type == TEMPO:
+        val = val - 30
+    elif event.type == DURATION:
+        val = val - 1
+    token = start + val
+
+    if token < 0 or token >= VOCAB_SIZE:
+        raise ValueError(
+            f"Token out of range: {token} (type={event.type}, value={event.value})"
+        )
+
+    return token
