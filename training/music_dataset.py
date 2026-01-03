@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 
-
+#TODO Probably delete this file and use batchify function instead
 class MusicDataset(Dataset):
     def __init__(self, data, seq_len):
         self.data = data

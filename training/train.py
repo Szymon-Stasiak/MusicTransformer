@@ -2,13 +2,12 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader
 from tqdm import tqdm
 import multiprocessing
 from torch.amp import GradScaler, autocast
-
-from constants import LEARNING_RATE, EPOCHS, VOCAB_SIZE, D_MODEL, N_LAYERS, N_HEAD, D_FF, DROPOUT, DATA_PATH, BATCH_SIZE
-from processing.data_loader import create_event_sequence_from_directory, create_event_sequence_from_npy_cache
+from constants import LEARNING_RATE, EPOCHS, VOCAB_SIZE, D_MODEL, N_LAYERS, N_HEAD, D_FF, DROPOUT, DATA_PATH, \
+    BATCH_SIZE, SEQUENCE_SIZE
+from processing.data_loader import create_token_sequence_from_directory, create_token_sequence_from_npy_cache
 from models.transformer_xl import MusicTransformerXL
 
 DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
@@ -17,17 +16,39 @@ if torch.cuda.is_available():
     torch.backends.cudnn.benchmark = True
 
 
+def batchify(data, batch_size, device):
+    if not isinstance(data, torch.Tensor):
+        data = torch.tensor(data, dtype=torch.long)
+
+    n_batch = data.size(0) // batch_size
+    data = data[:n_batch * batch_size]
+    data = data.view(batch_size, -1).contiguous()
+    return data.to(device)
+
+
+def get_batch(source, i, seq_len):
+    seq_len = min(seq_len, source.size(1) - 1 - i)
+    data = source[:, i:i + seq_len]
+    target = source[:, i + 1:i + 1 + seq_len]
+    return data, target
+
+
 def train():
     print(f"Loading data from {DATA_PATH}...")
-    # dataset = create_event_sequence_from_directory(DATA_PATH,
+
+    # dataset_obj = create_event_sequence_from_directory("C:/Users/stszy/Downloads/maestro-v3.0.0-midi",
     #                                                use_cache=True, make_cache=True, clean_cache=False)
-    dataset = create_event_sequence_from_npy_cache()
-    cpu_count = multiprocessing.cpu_count()
+    dataset_obj = create_token_sequence_from_npy_cache()
 
-    num_workers = max(2, min(8, cpu_count))
+    if dataset_obj is None:
+        print("Error: Failed to load dataset.")
+        return
 
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=num_workers,
-                            pin_memory=DEVICE.type == 'cuda')
+    raw_data = dataset_obj.data
+    print(f"Total tokens loaded: {len(raw_data)}")
+
+    print("Batchifying data (creating parallel streams)...")
+    train_data = batchify(raw_data, BATCH_SIZE, DEVICE)
 
     print("Initializing model...")
     model = MusicTransformerXL(
@@ -41,48 +62,52 @@ def train():
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
-
     scaler = GradScaler('cuda' if DEVICE.type == 'cuda' else 'cpu')
 
     print(f"Starting training on {DEVICE} for {EPOCHS} epochs with Batch Size {BATCH_SIZE}...")
     model.train()
 
+    stream_len = train_data.size(1)
+
     for epoch in range(EPOCHS):
         total_loss = 0
         mems = None
-        progress_bar = tqdm(dataloader, desc=f"Epoch {epoch + 1}/{EPOCHS}")
 
-        for batch_idx, (x, y) in enumerate(progress_bar):
-            x, y = x.to(DEVICE, non_blocking=True), y.to(DEVICE, non_blocking=True)
+
+        progress_bar = tqdm(range(0, stream_len - 1, SEQUENCE_SIZE), desc=f"Epoch {epoch + 1}/{EPOCHS}")
+
+        for i in progress_bar:
+            x, y = get_batch(train_data, i, SEQUENCE_SIZE)
 
             optimizer.zero_grad()
 
             with autocast('cuda' if DEVICE.type == 'cuda' else 'cpu'):
                 logits, mems = model(x, mems=mems)
 
-                if mems is not None:
-                    mems = [m.detach() for m in mems]
+                mems = [m.detach() for m in mems]
 
-                loss = criterion(logits.view(-1, VOCAB_SIZE), y.view(-1))
+                loss = criterion(logits.reshape(-1, VOCAB_SIZE), y.reshape(-1))
 
             scaler.scale(loss).backward()
 
             scaler.unscale_(optimizer)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), 0.25)
 
             scaler.step(optimizer)
             scaler.update()
 
             total_loss += loss.item()
+
             progress_bar.set_postfix(loss=loss.item())
 
-        avg_loss = total_loss / len(dataloader)
+        avg_loss = total_loss / len(progress_bar)
         print(f"Epoch {epoch + 1} completed. Average Loss: {avg_loss:.4f}")
 
-        save_path = f"/kaggle/working/checkpoints/model_epoch_{epoch + 1}.pth"
-        if not os.path.exists("checkpoints"):
-            os.makedirs("checkpoints")
+        save_dir = "checkpoints"
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
+        save_path = os.path.join(save_dir, f"model_epoch_{epoch + 1}.pth")
         torch.save(model.state_dict(), save_path)
         print(f"Model saved to {save_path}")
 

@@ -3,12 +3,11 @@ import numpy as np
 import hashlib
 from music21 import converter
 
-from training.music_dataset import MusicDataset
 from processing.extractors.notes_and_tempo_extractor import extract_notes_and_tempos
 from processing.extractors.chord_extractor import extract_chords
 from processing.event_mapper import group_items, create_list_of_events
 from processing.tokenizer import event_to_int
-from constants import SEQUENCE_SIZE, CACHE_DIR
+from constants import  CACHE_DIR
 
 
 def get_cache_filename(file_path):
@@ -16,7 +15,7 @@ def get_cache_filename(file_path):
     return os.path.join(CACHE_DIR, f"{hash_name}.npy")
 
 
-def create_event_sequence_from_directory(
+def create_token_sequence_from_directory(
         folder_path,
         use_cache=True,
         make_cache=True,
@@ -78,10 +77,10 @@ def create_event_sequence_from_directory(
                 print(f"Error in file {file}: {e}")
 
     print(f"Success: {len(all_tokens)} tokens have been loaded")
-    return MusicDataset(np.array(all_tokens, dtype=np.uint16), SEQUENCE_SIZE)
+    return all_tokens
 
 
-def create_event_sequence_from_npy_cache(path=CACHE_DIR):
+def create_token_sequence_from_npy_cache(path=CACHE_DIR):
     all_tokens = []
 
     if not os.path.exists(path):
@@ -98,6 +97,7 @@ def create_event_sequence_from_npy_cache(path=CACHE_DIR):
 
         try:
             tokens = np.load(file_path)
+            tokens = tokens.flatten()
             all_tokens.extend(tokens)
             print(f"Loaded cache file: {file}")
         except Exception as e:
@@ -110,4 +110,4 @@ def create_event_sequence_from_npy_cache(path=CACHE_DIR):
     all_tokens = np.array(all_tokens, dtype=np.uint16)
 
     print(f"Success: {len(all_tokens)} tokens loaded from cache")
-    return MusicDataset(all_tokens, SEQUENCE_SIZE)
+    return all_tokens
