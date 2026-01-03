@@ -15,7 +15,7 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.ba
 
 def train():
     print(f"Loading data from {DATA_PATH}...")
-    dataset = create_event_sequence_from_directory("path")
+    dataset = create_event_sequence_from_directory(DATA_PATH, use_cache=True, make_cache=True, clean_cache=False)
     cpu_count = multiprocessing.cpu_count()
 
     num_workers = max(2, min(8, cpu_count))

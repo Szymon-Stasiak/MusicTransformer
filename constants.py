@@ -7,7 +7,7 @@ VOCAB_SIZE = 565
 
 CACHE_DIR = "data_cache"
 
-DATA_PATH = "../data/evaluation"
+DATA_PATH = "../data/train/"
 
 SEQUENCE_SIZE = 512
 
