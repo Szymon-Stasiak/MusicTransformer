@@ -73,8 +73,13 @@ def create_midi_from_remi_items(items, output_path='output.mid'):
     s = stream.Score()
     p = stream.Part()
 
+    last_offset = 0.0
     for item in items:
         offset = item.start / 4.0
+        if offset < last_offset:
+            print(f"Skipping {item.type} at negative offset {offset}")
+            continue
+        last_offset = offset
 
         if item.type == "Tempo":
             tm = tempo.MetronomeMark(number=item.value)
@@ -82,11 +87,9 @@ def create_midi_from_remi_items(items, output_path='output.mid'):
 
         elif item.type == "Note":
             n = note.Note(item.value)
-            n.volume.velocity = item.value
-
+            n.volume.velocity = getattr(item, 'velocity', 64)
             duration_steps = item.end - item.start
             n.quarterLength = duration_steps / 4.0
-
             p.insert(offset, n)
 
     s.append(p)
@@ -98,25 +101,25 @@ def create_midi_humanized(items, output_path='humanized.mid'):
     s = stream.Score()
     p = stream.Part()
 
+    last_offset = 0.0
     for item in items:
         human_timing = random.uniform(-0.025, 0.025)
-
         raw_offset = (item.start / 4.0) + human_timing
-
         offset = max(0.0, raw_offset)
+
+        if offset < last_offset:
+            print(f"Skipping {item.type} at negative humanized offset {offset}")
+            continue
+        last_offset = offset
 
         if item.type == "Note":
             n = note.Note(item.value)
-
             base_vel = getattr(item, 'velocity', 64)
-
             human_vel = random.randint(-10, 10)
             final_vel = max(1, min(127, base_vel + human_vel))
             n.volume.velocity = final_vel
-
             duration_steps = item.end - item.start
             n.quarterLength = duration_steps / 4.0
-
             p.insert(offset, n)
 
         elif item.type == "Tempo":
