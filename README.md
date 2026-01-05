@@ -170,10 +170,10 @@ Official webpage: https://magenta.tensorflow.org/datasets/maestro
 
 ## Training Details
 
-The training process was conducted using high-performance computing resources to handle the long sequence lengths and complex attention mechanisms.
+The training process was conducted using parallel processing on a single high-performance GPU. Model was trained using parameters specified in the **Configuration & Hyperparameters** section above.
 
 * **Hardware:** NVIDIA Tesla P100 GPU
-* **Training Duration:** Approximately **X hours**
+* **Training Duration:** Approximately **40 hours** (48 minutes per epoch for 50 epochs)
 
 ---
 

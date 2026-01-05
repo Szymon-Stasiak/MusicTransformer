@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 import os
 from models.transformer_xl import MusicTransformerXL
-from constants import *
+from constants import VOCAB_SIZE, N_LAYERS, D_MODEL, N_HEAD, D_FF
 from processing.decoder import save_tokens_to_txt
 from processing.decoder import create_midis_from_tokens
 
@@ -26,7 +26,7 @@ def load_model(checkpoint_path):
     return model
 
 
-def generate(model, prime_sequence=[0], gen_len=512, temperature=1.0):
+def generate(model, prime_sequence=[1], gen_len=512, temperature=1.0):
     model.eval()
 
     current_seq = torch.tensor(prime_sequence, dtype=torch.long).unsqueeze(0).to(DEVICE)
