@@ -3,7 +3,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
-import multiprocessing
 from torch.amp import GradScaler, autocast
 from constants import LEARNING_RATE, EPOCHS, VOCAB_SIZE, D_MODEL, N_LAYERS, N_HEAD, D_FF, DROPOUT, DATA_PATH, \
     BATCH_SIZE, SEQUENCE_SIZE
@@ -36,9 +35,9 @@ def get_batch(source, i, seq_len):
 def train():
     print(f"Loading data from {DATA_PATH}...")
 
-    # dataset_obj = create_event_sequence_from_directory("C:/Users/stszy/Downloads/maestro-v3.0.0-midi",
-    #                                                use_cache=True, make_cache=True, clean_cache=False)
-    dataset_obj = create_token_sequence_from_npy_cache()
+    dataset_obj = create_token_sequence_from_directory("../data/train/",
+                                                   use_cache=True, make_cache=True, clean_cache=False)
+    # dataset_obj = create_token_sequence_from_npy_cache()
 
     if dataset_obj is None:
         print("Error: Failed to load dataset.")

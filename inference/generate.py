@@ -64,13 +64,13 @@ def generate_simple(model, prime_sequence=[1], gen_len=512, temperature=1.0):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Music Transformer Generator")
 
-    parser.add_argument('--checkpoint', '-c', type=str, default='./model_epoch_31.pth',
+    parser.add_argument('--checkpoint', '-c', type=str, default='./model_epoch_50.pth',
                         help='Path to the model checkpoint file (.pth)')
 
     parser.add_argument('--output', '-o', type=str, default='generated_music',
                         help='Output filename (without extension)')
 
-    parser.add_argument('--length', '-l', type=int, default=500,
+    parser.add_argument('--length', '-l', type=int, default=2000,
                         help='Number of tokens to generate')
 
     parser.add_argument('--temperature', '-t', type=float, default=1.0,

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 
 from models.positional_embedding import PositionalEmbedding
 from models.decoder_layer import DecoderLayer
@@ -13,7 +14,6 @@ class MusicTransformerXL(nn.Module):
         self.num_layers = num_layers
 
         self.embedding = nn.Embedding(vocab_size, d_model)
-
         self.pos_emb = PositionalEmbedding(d_model)
 
         self.layers = nn.ModuleList([
@@ -23,33 +23,44 @@ class MusicTransformerXL(nn.Module):
 
         self.dropout = nn.Dropout(dropout)
         self.norm = nn.LayerNorm(d_model)
-
         self.output_head = nn.Linear(d_model, vocab_size)
 
     def forward(self, x, mems=None):
+        device = x.device
+
         if mems is None:
             mems = [None] * len(self.layers)
 
-        word_emb = self.embedding(x)
+        word_emb = self.embedding(x) * math.sqrt(self.d_model)
         word_emb = self.dropout(word_emb)
-
 
         mems_len = mems[0].size(1) if mems[0] is not None else 0
         q_len = x.size(1)
         k_len = q_len + mems_len
 
-        pos_emb = self.pos_emb.pe[:, :k_len]
+        all_pe = self.pos_emb.pe.to(device)
+        pos_emb = all_pe[:, :k_len]
 
-        attn_mask = torch.triu(torch.ones(q_len, k_len, device=x.device), diagonal=1 + (k_len - q_len)).bool()
+        attn_mask = torch.triu(
+            torch.ones(q_len, k_len, device=device),
+            diagonal=1 + (k_len - q_len)
+        ).bool()
 
         hidden_state = word_emb
         new_mems = []
 
         for i, layer in enumerate(self.layers):
             new_mems.append(hidden_state.detach())
+
             m_i = mems[i]
             valid_mask = ~attn_mask
-            hidden_state = layer(hidden_state, pos_emb, mem=m_i, mask=valid_mask)
+
+            hidden_state = layer(
+                hidden_state,
+                pos_emb,
+                mem=m_i,
+                mask=valid_mask
+            )
 
         hidden_state = self.norm(hidden_state)
         logits = self.output_head(hidden_state)
